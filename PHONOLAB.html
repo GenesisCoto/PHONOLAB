@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>PHONOLAB - Vocal Tract & IPA</title>
+   <style>
+       :root {
+           --bg-dark: #F8FAFC;         /* Main Background: Soft grayish white */
+           --bg-card: #FFFFFF;         /* Cards Background: Crisp white */
+           --text-main: #0F172A;       /* Text & Structure: Almost black navy */
+           --text-muted: #475569;      /* Secondary text */
+           --primary-light: #0284C7;   /* Brand Accent: Corporate sky blue */
+           --accent-highlight: #EF4444;/* Red highlighting for active organs / wrong */
+           --accent-yellow: #F59E0B;   /* Yellow highlighting for vowel zone */
+           --accent-green: #10B981;    /* Correct answer green */
+           --border-color: #E2E8F0;    /* Soft border lines */
+       }
+
+       * {
+           box-sizing: border-box;
+           margin: 0;
+           padding: 0;
+           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+       }
+
+       body {
+           background-color: var(--bg-dark);
+           color: var(--text-main);
+           display: flex;
+           flex-direction: column;
+           min-height: 100vh;
+       }
+
+       header {
+           background-color: var(--bg-card);
+           padding: 1rem 2rem;
+           border-bottom: 2px solid var(--border-color);
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+       }
+
+       header h1 {
+           font-size: 1.5rem;
+           color: var(--primary-light);
+           font-weight: 700;
+       }
+
+       header p {
+           font-size: 0.85rem;
+           color: var(--text-muted);
+           font-weight: 500;
+       }
+
+       .header-btn {
+           background-color: var(--primary-light);
+           color: white;
+           border: none;
+           padding: 0.6rem 1.2rem;
+           border-radius: 8px;
+           font-weight: 700;
+           cursor: pointer;
+           transition: all 0.2s;
+       }
+
+       .header-btn:hover {
+           background-color: #0369A1;
+       }
+
+       .main-container {
+           display: grid;
+           grid-template-columns: 340px 1fr 340px;
+           gap: 1.25rem;
+           padding: 1.25rem;
+           flex-grow: 1;
+           transition: opacity 0.3s ease;
+       }
+
+       body.practice-active .main-container {
+           opacity: 0.25;
+           pointer-events: none;
+       }
+
+       /* --- LEFT PANEL --- */
+       .panel {
+           background-color: var(--bg-card);
+           border-radius: 12px;
+           border: 1px solid var(--border-color);
+           padding: 1.25rem;
+           display: flex;
+           flex-direction: column;
+           gap: 1rem;
+           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+       }
+
+       .tabs {
+           display: flex;
+           background-color: var(--bg-dark);
+           border-radius: 8px;
+           padding: 4px;
+           border: 1px solid var(--border-color);
+       }
+
+       .tab-btn {
+           flex: 1;
+           padding: 0.5rem 0.2rem;
+           border: none;
+           background: none;
+           color: var(--text-muted);
+           font-weight: 600;
+           font-size: 0.8rem;
+           cursor: pointer;
+           border-radius: 6px;
+           transition: all 0.2s ease;
+       }
+
+       .tab-btn.active {
+           background-color: var(--primary-light);
+           color: white;
+       }
+
+       .phoneme-grid {
+           display: grid;
+           grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+           gap: 0.5rem;
+           max-height: 68vh;
+           overflow-y: auto;
+           padding-right: 4px;
+       }
+
+       .phoneme-btn {
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           color: var(--text-main);
+           padding: 0.75rem 0.2rem;
+           border-radius: 8px;
+           font-size: 1.2rem;
+           font-weight: bold;
+           cursor: pointer;
+           transition: all 0.2s;
+           display: flex;
+           align-items: center;
+           justify-content: center;
+       }
+
+       .phoneme-btn:hover {
+           border-color: var(--primary-light);
+           background-color: #E0F2FE;
+           color: var(--primary-light);
+       }
+
+       .phoneme-btn.selected {
+           background-color: var(--primary-light);
+           border-color: var(--primary-light);
+           color: white;
+       }
+
+       /* --- CENTER PANEL --- */
+       .diagram-container {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           position: relative;
+       }
+
+       .diagram-title {
+           margin-bottom: 0.5rem;
+           font-size: 1rem;
+           color: var(--primary-light);
+           font-weight: 700;
+       }
+
+       svg.vocal-tract-svg {
+           width: 100%;
+           max-width: 500px;
+           height: auto;
+           background-color: #FFFFFF;
+           border-radius: 12px;
+           border: 1px solid var(--border-color);
+           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+       }
+
+       .organ-path {
+           fill: none;
+           stroke: #94A3B8;
+           stroke-width: 2.5;
+           transition: all 0.3s ease;
+           cursor: pointer;
+       }
+
+       .organ-fill {
+           fill: #F1F5F9;
+           stroke: #64748B;
+           stroke-width: 2;
+           transition: all 0.3s ease;
+           cursor: pointer;
+       }
+
+       .active-organ {
+           stroke: var(--accent-highlight) !important;
+           fill: rgba(239, 68, 68, 0.25) !important;
+           stroke-width: 4 !important;
+           filter: drop-shadow(0px 0px 6px rgba(239, 68, 68, 0.6));
+       }
+
+       .active-vowel-zone {
+           stroke: var(--accent-yellow) !important;
+           fill: rgba(245, 158, 11, 0.25) !important;
+           stroke-width: 3.5 !important;
+           filter: drop-shadow(0px 0px 6px rgba(245, 158, 11, 0.6));
+       }
+
+       /* --- RIGHT PANEL --- */
+       .info-header {
+           border-bottom: 2px solid var(--border-color);
+           padding-bottom: 0.75rem;
+           display: flex;
+           align-items: center;
+           gap: 1rem;
+       }
+
+       .symbol-badge {
+           font-size: 1.8rem;
+           font-weight: bold;
+           background-color: var(--primary-light);
+           color: white;
+           padding: 0.2rem 0.6rem;
+           border-radius: 8px;
+           min-width: 75px;
+           text-align: center;
+       }
+
+       .info-title h2 {
+           font-size: 1.1rem;
+           color: var(--text-main);
+           font-weight: 700;
+       }
+
+       .info-title p {
+           font-size: 0.85rem;
+           color: var(--text-muted);
+           font-weight: 600;
+       }
+
+       .prop-group {
+           margin-top: 1rem;
+           display: flex;
+           flex-direction: column;
+           gap: 0.65rem;
+       }
+
+       .prop-card {
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           border-radius: 8px;
+           padding: 0.65rem;
+       }
+
+       .prop-card label {
+           font-size: 0.7rem;
+           text-transform: uppercase;
+           letter-spacing: 0.05em;
+           color: var(--primary-light);
+           font-weight: 700;
+           display: block;
+           margin-bottom: 0.2rem;
+       }
+
+       .prop-card p {
+           font-size: 0.9rem;
+           font-weight: 600;
+           color: var(--text-main);
+       }
+
+       .organs-list {
+           display: flex;
+           flex-wrap: wrap;
+           gap: 0.35rem;
+           margin-top: 0.25rem;
+       }
+
+       .organ-tag {
+           background-color: #FEE2E2;
+           color: #991B1B;
+           font-weight: 600;
+           font-size: 0.75rem;
+           padding: 0.2rem 0.5rem;
+           border-radius: 4px;
+           border: 1px solid #FCA5A5;
+       }
+
+       /* --- PRACTICE MODAL --- */
+       .modal-overlay {
+           position: fixed;
+           top: 0;
+           left: 0;
+           width: 100vw;
+           height: 100vh;
+           background-color: rgba(15, 23, 42, 0.45);
+           backdrop-filter: blur(2px);
+           display: none;
+           justify-content: center;
+           align-items: center;
+           z-index: 1000;
+       }
+
+       .modal-content {
+           background-color: var(--bg-card);
+           width: 90%;
+           max-width: 850px;
+           max-height: 90vh;
+           border-radius: 12px;
+           padding: 1.5rem;
+           overflow-y: auto;
+           box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+           display: flex;
+           flex-direction: column;
+           gap: 1.25rem;
+           border: 1px solid var(--border-color);
+       }
+
+       .modal-header {
+           display: flex;
+           justify-content: space-between;
+           align-items: center;
+           border-bottom: 2px solid var(--border-color);
+           padding-bottom: 0.75rem;
+       }
+
+       .modal-close {
+           background: none;
+           border: none;
+           font-size: 1.5rem;
+           font-weight: bold;
+           color: var(--text-muted);
+           cursor: pointer;
+       }
+
+       .quiz-type-selector {
+           display: flex;
+           gap: 0.5rem;
+       }
+
+       .quiz-type-btn {
+           flex: 1;
+           padding: 0.6rem;
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           border-radius: 8px;
+           font-weight: 600;
+           font-size: 0.85rem;
+           cursor: pointer;
+           color: var(--text-muted);
+           transition: all 0.2s;
+       }
+
+       .quiz-type-btn.active {
+           background-color: var(--primary-light);
+           color: white;
+           border-color: var(--primary-light);
+       }
+
+       .progress-container {
+           width: 100%;
+           background-color: var(--bg-dark);
+           border-radius: 8px;
+           height: 12px;
+           overflow: hidden;
+           border: 1px solid var(--border-color);
+       }
+
+       .progress-bar {
+           height: 100%;
+           width: 0%;
+           background-color: var(--primary-light);
+           transition: width 0.3s ease;
+       }
+
+       .progress-label {
+           font-size: 0.8rem;
+           font-weight: 700;
+           color: var(--text-muted);
+           text-align: right;
+           margin-top: -0.5rem;
+       }
+
+       .options-grid {
+           display: grid;
+           grid-template-columns: 1fr 1fr;
+           gap: 0.75rem;
+           margin-top: 0.5rem;
+           width: 100%;
+       }
+
+       .option-btn {
+           padding: 0.85rem;
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           border-radius: 8px;
+           font-weight: 600;
+           font-size: 0.95rem;
+           cursor: pointer;
+           text-align: center;
+           transition: all 0.2s;
+       }
+
+       .option-btn:hover:not(:disabled) {
+           border-color: var(--primary-light);
+           background-color: #E0F2FE;
+       }
+
+       .option-btn.correct {
+           background-color: #D1FAE5 !important;
+           border-color: var(--accent-green) !important;
+           color: #065F46 !important;
+           font-weight: bold;
+       }
+
+       .option-btn.wrong {
+           background-color: #FEE2E2 !important;
+           border-color: var(--accent-highlight) !important;
+           color: #991B1B !important;
+           font-weight: bold;
+       }
+
+       .quiz-container-inner {
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           gap: 1rem;
+           width: 100%;
+       }
+
+       .quiz-badge {
+           font-size: 2.5rem;
+           font-weight: bold;
+           background-color: var(--primary-light);
+           color: white;
+           padding: 0.5rem 1.5rem;
+           border-radius: 12px;
+       }
+
+       .feedback-msg {
+           font-weight: 700;
+           font-size: 1.05rem;
+           min-height: 1.5rem;
+           text-align: center;
+       }
+
+       .target-word-display {
+           font-size: 2.2rem;
+           font-weight: 700;
+           color: var(--primary-light);
+           letter-spacing: 0.05em;
+       }
+
+       .quiz-nav-bar {
+           display: flex;
+           justify-content: space-between;
+           width: 100%;
+           margin-top: 1rem;
+           padding-top: 1rem;
+           border-top: 1px solid var(--border-color);
+       }
+
+       .nav-btn {
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           color: var(--text-main);
+           padding: 0.6rem 1.2rem;
+           border-radius: 8px;
+           font-weight: 700;
+           cursor: pointer;
+           transition: all 0.2s;
+       }
+
+       .nav-btn:hover:not(:disabled) {
+           background-color: #E2E8F0;
+       }
+
+       .nav-btn:disabled {
+           opacity: 0.4;
+           cursor: not-allowed;
+       }
+
+       .nav-btn.primary {
+           background-color: var(--primary-light);
+           color: white;
+           border: none;
+       }
+
+       .nav-btn.primary:hover:not(:disabled) {
+           background-color: #0369A1;
+       }
+
+       .results-card {
+           background-color: var(--bg-dark);
+           border: 1px solid var(--border-color);
+           border-radius: 12px;
+           padding: 1.5rem;
+           width: 100%;
+           text-align: center;
+           display: flex;
+           flex-direction: column;
+           gap: 1rem;
+       }
+
+       .results-score {
+           font-size: 3rem;
+           font-weight: 800;
+           color: var(--primary-light);
+       }
+
+       .review-list {
+           text-align: left;
+           background-color: white;
+           padding: 1rem;
+           border-radius: 8px;
+           border: 1px solid var(--border-color);
+       }
+
+       .review-list h4 {
+           color: var(--accent-highlight);
+           margin-bottom: 0.5rem;
+       }
+
+       .review-list ul {
+           padding-left: 1.25rem;
+           color: var(--text-muted);
+           font-size: 0.9rem;
+       }
+
+       @media (max-width: 1024px) {
+           .main-container {
+               grid-template-columns: 1fr;
+           }
+           .phoneme-grid {
+               max-height: 200px;
+           }
+           .options-grid {
+               grid-template-columns: 1fr;
+           }
+       }
+   </style>
+</head>
+<body>
+
+   <header>
+       <div>
+           <h1>PHONOLAB</h1>
+           <p>Interactive Vocal Tract & IPA Simulator</p>
+       </div>
+       <button class="header-btn" onclick="openPracticeModal()">Practice Mode</button>
+   </header>
+
+   <div class="main-container">
+       
+       <!-- LEFT PANEL -->
+       <div class="panel">
+           <div class="tabs">
+               <button class="tab-btn active" onclick="switchCategory('vowels')">Vowels (12)</button>
+               <button class="tab-btn" onclick="switchCategory('diphthongs')">Diphthongs (8)</button>
+               <button class="tab-btn" onclick="switchCategory('consonants')">Consonants (24)</button>
+           </div>
+
+           <div id="phoneme-grid" class="phoneme-grid">
+               <!-- Dynamically populated via JS -->
+           </div>
+       </div>
+
+       <!-- CENTER PANEL -->
+       <div class="panel diagram-container">
+           <div class="diagram-title">The Organs of Speech</div>
+           
+           <svg id="vocal-tract" class="vocal-tract-svg" viewBox="0 0 500 580">
+               <!-- SVG Content Template -->
+           </svg>
+       </div>
+
+       <!-- RIGHT PANEL -->
+       <div class="panel">
+           <div class="info-header">
+               <div id="disp-symbol" class="symbol-badge">/i:/</div>
+               <div class="info-title">
+                   <h2 id="disp-name">Close Front Unrounded Long Vowel</h2>
+                   <p id="disp-type">Vowel</p>
+               </div>
+           </div>
+
+           <div class="prop-group">
+               <div class="prop-card">
+                   <label>Voicing Degree</label>
+                   <p id="disp-voicing">Voiced</p>
+               </div>
+
+               <div class="prop-card">
+                   <label>Place of Articulation / Position</label>
+                   <p id="disp-place">High / Front</p>
+               </div>
+
+               <div class="prop-card">
+                   <label>Manner of Articulation / Height</label>
+                   <p id="disp-manner">Long Vowel</p>
+               </div>
+
+               <div class="prop-card">
+                   <label>Involved Anatomical Organs</label>
+                   <div id="disp-organs" class="organs-list">
+                       <span class="organ-tag">Tongue Body</span>
+                       <span class="organ-tag">Hard Palate</span>
+                   </div>
+               </div>
+
+               <div class="prop-card">
+                   <label>Example Words (3 Examples)</label>
+                   <p id="disp-examples" style="color: #0284C7; font-size: 1rem; line-height: 1.4;"></p>
+               </div>
+           </div>
+       </div>
+
+   </div>
+
+   <!-- PRACTICE MODAL -->
+   <div id="practice-modal" class="modal-overlay">
+       <div class="modal-content">
+           <div class="modal-header">
+               <h2>PHONOLAB Practice Mode</h2>
+               <button class="modal-close" onclick="closePracticeModal()">&times;</button>
+           </div>
+
+           <div class="quiz-type-selector">
+               <button class="quiz-type-btn active" id="type-btn-1" onclick="setQuizType(1)">1. Identify Features</button>
+               <button class="quiz-type-btn" id="type-btn-2" onclick="setQuizType(2)">2. Word to Phoneme</button>
+           </div>
+
+           <div class="tabs">
+               <button class="tab-btn active" id="quiz-cat-vowels" onclick="setQuizCategory('vowels')">Vowels</button>
+               <button class="tab-btn" id="quiz-cat-diphthongs" onclick="setQuizCategory('diphthongs')">Diphthongs</button>
+               <button class="tab-btn" id="quiz-cat-consonants" onclick="setQuizCategory('consonants')">Consonants</button>
+           </div>
+
+           <div id="progress-wrapper">
+               <div class="progress-container">
+                   <div id="quiz-progress-bar" class="progress-bar"></div>
+               </div>
+               <div id="quiz-progress-text" class="progress-label">Question 1 of 5</div>
+           </div>
+
+           <div id="quiz-body" class="quiz-container-inner">
+               <!-- Dynamically populated via JS -->
+           </div>
+
+           <div class="quiz-nav-bar" id="quiz-nav-bar">
+               <button class="nav-btn" id="btn-prev" onclick="prevQuestion()" disabled>&larr; Back</button>
+               <button class="nav-btn primary" id="btn-next" onclick="nextQuestion()">Next &rarr;</button>
+           </div>
+       </div>
+   </div>
+
+   <script>
+       const phonemeData = {
+           vowels: [
+               { symbol: 'i:', name: 'Close Front Unrounded Long Vowel', type: 'Vowel', voicing: 'Voiced', place: 'High / Front', manner: 'Long Vowel', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'bean, see, team' },
+               { symbol: 'ɪ', name: 'Near-Close Near-Front Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Near-High / Near-Front', manner: 'Short Vowel', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'tip, sit, hidden' },
+               { symbol: 'u:', name: 'Close Back Rounded Long Vowel', type: 'Vowel', voicing: 'Voiced', place: 'High / Back', manner: 'Long Vowel', organIDs: ['tongue_body', 'velum', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'moon, food, shoe' },
+               { symbol: 'ʊ', name: 'Near-Close Near-Back Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Near-High / Near-Back', manner: 'Short Vowel', organIDs: ['tongue_body', 'velum', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'shook, put, foot' },
+               { symbol: 'ə', name: 'Mid Central Short Vowel (Schwa)', type: 'Vowel', voicing: 'Voiced', place: 'Mid / Central', manner: 'Short Vowel', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'the, about, sofa' },
+               { symbol: '3:', name: 'Open-Mid Central Long Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Mid / Central', manner: 'Long Vowel', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'sir, bird, turn' },
+               { symbol: 'ɔ:', name: 'Open-Mid Back Long Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Mid-Low / Back', manner: 'Long Vowel', organIDs: ['tongue_body', 'velum', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'shore, door, law' },
+               { symbol: 'e', name: 'Open-Mid Front Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Mid / Front', manner: 'Short Vowel', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'met, bed, head' },
+               { symbol: 'ʌ', name: 'Open-Mid Back Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Mid-Low / Central-Back', manner: 'Short Vowel', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'fun, cup, love' },
+               { symbol: 'ɒ', name: 'Open Back Rounded Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Low / Back', manner: 'Short Vowel', organIDs: ['tongue_body', 'pharynx', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'lock, hot, stop' },
+               { symbol: 'æ', name: 'Near-Open Front Short Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Low / Front', manner: 'Short Vowel', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'pan, cat, black' },
+               { symbol: 'ɑ:', name: 'Open Back Unrounded Long Vowel', type: 'Vowel', voicing: 'Voiced', place: 'Low / Back', manner: 'Long Vowel', organIDs: ['tongue_body', 'pharynx', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'card, father, start' }
+           ],
+           diphthongs: [
+               { symbol: 'eə', name: 'Centring Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Front to Central Gliding', manner: 'Centring Diphthong', organIDs: ['tongue_body', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'hair, care, bear' },
+               { symbol: 'ɪə', name: 'Centring Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'High-Front to Central Gliding', manner: 'Centring Diphthong', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'dear, ear, hear' },
+               { symbol: 'eɪ', name: 'Closing Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Mid-Front to High-Front', manner: 'Closing Diphthong', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'same, make, rain' },
+               { symbol: 'aʊ', name: 'Closing Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Low to High-Back', manner: 'Closing Diphthong', organIDs: ['tongue_body', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'loud, house, cow' },
+               { symbol: 'əʊ', name: 'Closing Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Central to High-Back', manner: 'Closing Diphthong', organIDs: ['tongue_body', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'go, home, boat' },
+               { symbol: 'aɪ', name: 'Closing Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Low to High-Front', manner: 'Closing Diphthong', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'hide, my, sky' },
+               { symbol: 'ʊə', name: 'Centring Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'High-Back to Central Gliding', manner: 'Centring Diphthong', organIDs: ['tongue_body', 'velum', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'curious, pure, tourist' },
+               { symbol: 'ɔɪ', name: 'Closing Diphthong', type: 'Diphthong', voicing: 'Voiced', place: 'Mid-Back to High-Front', manner: 'Closing Diphthong', organIDs: ['tongue_body', 'lips', 'vocal_folds', 'trachea', 'vowel_zone'], examples: 'choice, boy, join' }
+           ],
+           consonants: [
+               { symbol: 'f', name: 'Voiceless Labiodental Fricative', type: 'Consonant', voicing: 'Voiceless', place: 'Labiodental', manner: 'Fricative', organIDs: ['lips', 'teeth', 'trachea', 'glottis'], examples: 'first, fall, coffee' },
+               { symbol: 'v', name: 'Voiced Labiodental Fricative', type: 'Consonant', voicing: 'Voiced', place: 'Labiodental', manner: 'Fricative', organIDs: ['lips', 'teeth', 'vocal_folds', 'trachea'], examples: 'van, heavy, love' },
+               { symbol: 'θ', name: 'Voiceless Dental Fricative', type: 'Consonant', voicing: 'Voiceless', place: 'Dental', manner: 'Fricative', organIDs: ['tongue_tip', 'teeth', 'trachea', 'glottis'], examples: 'thick, think, bath' },
+               { symbol: 'ð', name: 'Voiced Dental Fricative', type: 'Consonant', voicing: 'Voiced', place: 'Dental', manner: 'Fricative', organIDs: ['tongue_tip', 'teeth', 'vocal_folds', 'trachea'], examples: 'these, mother, breathe' },
+               { symbol: 's', name: 'Voiceless Alveolar Fricative', type: 'Consonant', voicing: 'Voiceless', place: 'Alveolar', manner: 'Fricative', organIDs: ['tongue_tip', 'alveolar_ridge', 'trachea'], examples: 'saw, lesson, bus' },
+               { symbol: 'z', name: 'Voiced Alveolar Fricative', type: 'Consonant', voicing: 'Voiced', place: 'Alveolar', manner: 'Fricative', organIDs: ['tongue_tip', 'alveolar_ridge', 'vocal_folds', 'trachea'], examples: 'zen, zoo, buzz' },
+               { symbol: 'ʃ', name: 'Voiceless Postalveolar Fricative', type: 'Consonant', voicing: 'Voiceless', place: 'Postalveolar', manner: 'Fricative', organIDs: ['tongue_tip', 'hard_palate', 'trachea'], examples: 'she, ocean, rush' },
+               { symbol: 'ʒ', name: 'Voiced Postalveolar Fricative', type: 'Consonant', voicing: 'Voiced', place: 'Postalveolar', manner: 'Fricative', organIDs: ['tongue_tip', 'hard_palate', 'vocal_folds', 'trachea'], examples: 'casual, vision, beige' },
+               { symbol: 'h', name: 'Voiceless Glottal Fricative', type: 'Consonant', voicing: 'Voiceless', place: 'Glottal', manner: 'Fricative', organIDs: ['vocal_folds', 'pharynx', 'trachea'], examples: 'hard, hat, house' },
+               { symbol: 'p', name: 'Voiceless Bilabial Plosive', type: 'Consonant', voicing: 'Voiceless', place: 'Bilabial', manner: 'Plosive / Stop', organIDs: ['lips', 'trachea', 'glottis'], examples: 'pick, spin, cap' },
+               { symbol: 'b', name: 'Voiced Bilabial Plosive', type: 'Consonant', voicing: 'Voiced', place: 'Bilabial', manner: 'Plosive / Stop', organIDs: ['lips', 'vocal_folds', 'trachea'], examples: 'bed, cabin, web' },
+               { symbol: 't', name: 'Voiceless Alveolar Plosive', type: 'Consonant', voicing: 'Voiceless', place: 'Alveolar', manner: 'Plosive / Stop', organIDs: ['tongue_tip', 'alveolar_ridge', 'trachea', 'glottis'], examples: 'team, stop, cat' },
+               { symbol: 'd', name: 'Voiced Alveolar Plosive', type: 'Consonant', voicing: 'Voiced', place: 'Alveolar', manner: 'Plosive / Stop', organIDs: ['tongue_tip', 'alveolar_ridge', 'vocal_folds', 'trachea'], examples: 'dine, ladder, red' },
+               { symbol: 'k', name: 'Voiceless Velar Plosive', type: 'Consonant', voicing: 'Voiceless', place: 'Velar', manner: 'Plosive / Stop', organIDs: ['tongue_body', 'velum', 'trachea', 'glottis'], examples: 'code, skip, back' },
+               { symbol: 'g', name: 'Voiced Velar Plosive', type: 'Consonant', voicing: 'Voiced', place: 'Velar', manner: 'Plosive / Stop', organIDs: ['tongue_body', 'velum', 'vocal_folds', 'trachea'], examples: 'get, eager, bag' },
+               { symbol: 'tʃ', name: 'Voiceless Postalveolar Affricate', type: 'Consonant', voicing: 'Voiceless', place: 'Postalveolar', manner: 'Affricate', organIDs: ['tongue_tip', 'alveolar_ridge', 'hard_palate', 'trachea'], examples: 'choose, match, nature' },
+               { symbol: 'dʒ', name: 'Voiced Postalveolar Affricate', type: 'Consonant', voicing: 'Voiced', place: 'Postalveolar', manner: 'Affricate', organIDs: ['tongue_tip', 'alveolar_ridge', 'vocal_folds', 'trachea'], examples: 'jet, magic, age' },
+               { symbol: 'w', name: 'Voiced Labio-Velar Approximant', type: 'Consonant', voicing: 'Voiced', place: 'Labial-Velar', manner: 'Approximant', organIDs: ['lips', 'tongue_body', 'velum', 'vocal_folds', 'trachea'], examples: 'watch, wet, swim' },
+               { symbol: 'r', name: 'Voiced Post-Alveolar Approximant', type: 'Consonant', voicing: 'Voiced', place: 'Postalveolar', manner: 'Approximant', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea'], examples: 'rug, red, write' },
+               { symbol: 'j', name: 'Voiced Palatal Approximant', type: 'Consonant', voicing: 'Voiced', place: 'Palatal', manner: 'Approximant', organIDs: ['tongue_body', 'hard_palate', 'vocal_folds', 'trachea'], examples: 'yet, onion, yellow' },
+               { symbol: 'l', name: 'Voiced Alveolar Lateral Approximant', type: 'Consonant', voicing: 'Voiced', place: 'Alveolar', manner: 'Lateral Approximant', organIDs: ['tongue_tip', 'alveolar_ridge', 'vocal_folds', 'trachea'], examples: 'look, yellow, ball' },
+               { symbol: 'm', name: 'Voiced Bilabial Nasal', type: 'Consonant', voicing: 'Voiced', place: 'Bilabial', manner: 'Nasal', organIDs: ['lips', 'velum', 'nasal_cavity', 'vocal_folds', 'trachea'], examples: 'mode, summer, ham' },
+               { symbol: 'n', name: 'Voiced Alveolar Nasal', type: 'Consonant', voicing: 'Voiced', place: 'Alveolar', manner: 'Nasal', organIDs: ['tongue_tip', 'alveolar_ridge', 'nasal_cavity', 'vocal_folds', 'trachea'], examples: 'neck, funny, pen' },
+               { symbol: 'ŋ', name: 'Voiced Velar Nasal', type: 'Consonant', voicing: 'Voiced', place: 'Velar', manner: 'Nasal', organIDs: ['tongue_body', 'velum', 'nasal_cavity', 'vocal_folds', 'trachea'], examples: 'song, singer, ring' }
+           ]
+       };
+
+       const svgCode = `
+           <path class="organ-path" d="M 210,30 C 160,35 120,70 110,120 C 105,145 120,175 125,190 C 120,195 100,225 105,230 C 107,232 120,230 130,225 C 125,235 110,245 110,250 C 110,255 125,258 135,258 C 130,265 118,272 118,280 C 118,290 135,295 145,295 C 155,310 160,345 160,370 C 160,420 170,470 170,540" stroke="#94A3B8" stroke-width="2" fill="none" stroke-dasharray="4,4" />
+           <path id="nasal_cavity" class="organ-fill" d="M 130,195 C 140,150 175,100 240,110 C 310,120 360,150 350,210 L 340,240 C 335,210 280,185 220,190 C 170,195 145,200 130,195 Z" fill="#F1F5F9" />
+           <text x="210" y="145" fill="#475569" font-size="11" font-weight="600">Nasal Cavity</text>
+           <path id="hard_palate" class="organ-fill" d="M 155,225 C 195,215 255,220 285,235 L 285,247 C 255,232 195,227 155,235 Z" fill="#CBD5E1" />
+           <text x="200" y="215" fill="#475569" font-size="10" font-weight="600">Hard Palate</text>
+           <path id="velum" class="organ-fill" d="M 285,235 C 325,245 345,265 340,295 C 333,298 330,285 325,275 C 315,260 285,247 285,247 Z" fill="#CBD5E1" />
+           <text x="300" y="230" fill="#475569" font-size="10" font-weight="600">Velum</text>
+           <path id="alveolar_ridge" class="organ-fill" d="M 142,232 C 147,228 153,226 157,227 L 155,235 C 150,234 145,236 142,238 Z" fill="#94A3B8" />
+           <text x="80" y="215" fill="#475569" font-size="9" font-weight="600">Alveolar Ridge</text>
+           <g id="teeth">
+               <path class="organ-fill" d="M 137,238 L 140,253 L 147,253 L 143,237 Z" fill="#FFFFFF" stroke="#64748B" />
+               <path class="organ-fill" d="M 137,277 L 140,262 L 147,262 L 143,277 Z" fill="#FFFFFF" stroke="#64748B" />
+           </g>
+           <text x="75" y="258" fill="#475569" font-size="10" font-weight="600">Teeth</text>
+           <g id="lips">
+               <path class="organ-fill" d="M 110,250 C 120,248 135,245 137,252 C 135,257 122,258 110,255 Z" fill="#94A3B8" />
+               <path class="organ-fill" d="M 118,280 C 128,278 137,275 137,268 C 134,263 122,266 118,272 Z" fill="#94A3B8" />
+           </g>
+           <text x="65" y="272" fill="#475569" font-size="10" font-weight="600">Lips</text>
+           <g id="tongue_group">
+               <path id="tongue_body" class="organ-fill" d="M 143,272 C 165,252 205,247 250,252 C 295,257 325,282 320,335 C 315,385 285,405 260,410 C 215,415 170,365 150,335 C 140,320 142,285 143,272 Z" fill="#CBD5E1" />
+               <text x="210" y="295" fill="#0F172A" font-size="12" font-weight="700">Tongue</text>
+               <path id="tongue_tip" class="organ-path" d="M 143,272 C 150,263 162,258 175,256" stroke="#475569" stroke-width="3" />
+           </g>
+           <path id="pharynx" class="organ-path" d="M 350,240 L 350,420" stroke="#64748B" stroke-width="4" />
+           <text x="360" y="320" fill="#475569" font-size="10" font-weight="600">Pharynx</text>
+           <path id="epiglottis" class="organ-fill" d="M 315,380 C 322,360 332,360 330,390 Z" fill="#94A3B8" />
+           <text x="335" y="375" fill="#475569" font-size="9" font-weight="600">Epiglottis</text>
+           <g id="vocal_folds">
+               <rect x="300" y="420" width="50" height="35" rx="6" fill="#F1F5F9" stroke="#64748B" stroke-width="2" />
+               <path d="M 310,437 Q 325,430 340,437" stroke="#EF4444" stroke-width="3.5" fill="none" />
+           </g>
+           <text x="360" y="442" fill="#475569" font-size="10" font-weight="600">Vocal Cords / Larynx</text>
+           <g id="trachea">
+               <path class="organ-fill" d="M 300,455 L 300,560 L 325,560 L 325,455 Z" fill="#F8FAFC" stroke="#64748B" stroke-width="2" />
+               <line x1="300" y1="475" x2="325" y2="475" stroke="#94A3B8" stroke-width="2" />
+               <line x1="300" y1="495" x2="325" y2="495" stroke="#94A3B8" stroke-width="2" />
+               <line x1="300" y1="515" x2="325" y2="515" stroke="#94A3B8" stroke-width="2" />
+               <line x1="300" y1="535" x2="325" y2="535" stroke="#94A3B8" stroke-width="2" />
+               <path class="organ-fill" d="M 330,455 L 330,560 L 350,560 L 350,455 Z" fill="#E2E8F0" stroke="#64748B" stroke-width="1.5" />
+           </g>
+           <text x="200" y="505" fill="#475569" font-size="10" font-weight="600">Trachea (Windpipe)</text>
+           <path id="glottis" class="organ-path" d="M 312,550 L 312,458" stroke="#0284C7" stroke-width="2" stroke-dasharray="4,4" />
+           <path id="vowel_zone" class="organ-path" d="M 160,240 Q 230,230 290,250 Q 260,330 180,290 Z" opacity="0.3" style="display:none;" />
+       `;
+
+       let currentCategory = 'vowels';
+       let selectedPhoneme = phonemeData.vowels[0];
+
+       function switchCategory(category) {
+           currentCategory = category;
+           document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+           event.target.classList.add('active');
+           renderPhonemeButtons();
+           selectPhoneme(phonemeData[category][0].symbol);
+       }
+
+       function renderPhonemeButtons() {
+           const grid = document.getElementById('phoneme-grid');
+           grid.innerHTML = '';
+           phonemeData[currentCategory].forEach(item => {
+               const btn = document.createElement('button');
+               btn.className = `phoneme-btn ${selectedPhoneme.symbol === item.symbol ? 'selected' : ''}`;
+               btn.innerHTML = `/${item.symbol}/`;
+               btn.onclick = () => selectPhoneme(item.symbol);
+               grid.appendChild(btn);
+           });
+       }
+
+       function selectPhoneme(symbol) {
+           const list = phonemeData[currentCategory];
+           const item = list.find(p => p.symbol === symbol);
+           if (!item) return;
+
+           selectedPhoneme = item;
+           document.querySelectorAll('.phoneme-btn').forEach(btn => {
+               btn.classList.toggle('selected', btn.innerText === `/${symbol}/`);
+           });
+
+           document.getElementById('disp-symbol').innerText = `/${item.symbol}/`;
+           document.getElementById('disp-name').innerText = item.name;
+           document.getElementById('disp-type').innerText = item.type;
+           document.getElementById('disp-voicing').innerText = item.voicing;
+           document.getElementById('disp-place').innerText = item.place;
+           document.getElementById('disp-manner').innerText = item.manner;
+           document.getElementById('disp-examples').innerHTML = item.examples;
+
+           const organsContainer = document.getElementById('disp-organs');
+           organsContainer.innerHTML = '';
+           item.organIDs.forEach(orgId => {
+               if(orgId !== 'vowel_zone') {
+                   const tag = document.createElement('span');
+                   tag.className = 'organ-tag';
+                   tag.innerText = orgId.replace('_', ' ').toUpperCase();
+                   organsContainer.appendChild(tag);
+               }
+           });
+
+           highlightDiagramOrgans(item.organIDs);
+       }
+
+       function highlightDiagramOrgans(activeOrganIDs) {
+           document.querySelectorAll('.organ-path, .organ-fill').forEach(el => {
+               el.classList.remove('active-organ', 'active-vowel-zone');
+           });
+
+           const vowelZone = document.getElementById('vowel_zone');
+           if(vowelZone) vowelZone.style.display = 'none';
+
+           activeOrganIDs.forEach(id => {
+               const organEl = document.getElementById(id);
+               if (organEl) {
+                   if (id === 'vowel_zone') {
+                       organEl.style.display = 'block';
+                       organEl.classList.add('active-vowel-zone');
+                   } else {
+                       organEl.classList.add('active-organ');
+                   }
+               }
+           });
+       }
+
+       /* --- PRACTICE ENGINE --- */
+       let currentQuizType = 1;
+       let currentQuizCategory = 'vowels';
+       const TOTAL_QUESTIONS = 5;
+       let currentQuestionIndex = 0;
+       let quizSessionData = []; 
+       let userAnswers = []; 
+
+       function openPracticeModal() {
+           document.body.classList.add('practice-active');
+           document.getElementById('practice-modal').style.display = 'flex';
+           initQuizSession();
+       }
+
+       function closePracticeModal() {
+           document.body.classList.remove('practice-active');
+           document.getElementById('practice-modal').style.display = 'none';
+       }
+
+       function setQuizType(type) {
+           currentQuizType = type;
+           document.querySelectorAll('.quiz-type-btn').forEach((btn, idx) => {
+               btn.classList.toggle('active', idx + 1 === type);
+           });
+           initQuizSession();
+       }
+
+       function setQuizCategory(cat) {
+           currentQuizCategory = cat;
+           document.getElementById('quiz-cat-vowels').classList.toggle('active', cat === 'vowels');
+           document.getElementById('quiz-cat-diphthongs').classList.toggle('active', cat === 'diphthongs');
+           document.getElementById('quiz-cat-consonants').classList.toggle('active', cat === 'consonants');
+           initQuizSession();
+       }
+
+       function initQuizSession() {
+           currentQuestionIndex = 0;
+           userAnswers = new Array(TOTAL_QUESTIONS).fill(null);
+           
+           // Clear any cached question properties on phonemes
+           Object.values(phonemeData).flat().forEach(item => {
+               delete item.cachedOptions;
+               delete item.cachedWord;
+           });
+
+           const list = shuffleArray([...phonemeData[currentQuizCategory]]);
+           quizSessionData = list.slice(0, TOTAL_QUESTIONS);
+
+           document.getElementById('progress-wrapper').style.display = 'block';
+           document.getElementById('quiz-nav-bar').style.display = 'flex';
+           renderQuestion();
+       }
+
+       function updateProgressBar() {
+           const progressPct = ((currentQuestionIndex + 1) / TOTAL_QUESTIONS) * 100;
+           document.getElementById('quiz-progress-bar').style.width = `${progressPct}%`;
+           document.getElementById('quiz-progress-text').innerText = `Question ${currentQuestionIndex + 1} of ${TOTAL_QUESTIONS}`;
+           
+           document.getElementById('btn-prev').disabled = (currentQuestionIndex === 0);
+           
+           const nextBtn = document.getElementById('btn-next');
+           if (currentQuestionIndex === TOTAL_QUESTIONS - 1) {
+               nextBtn.innerText = 'Finish Quiz';
+           } else {
+               nextBtn.innerText = 'Next \u2192';
+           }
+       }
+
+       function renderQuestion() {
+           updateProgressBar();
+           const container = document.getElementById('quiz-body');
+           container.innerHTML = '';
+
+           const qPhoneme = quizSessionData[currentQuestionIndex];
+           const previousAnswer = userAnswers[currentQuestionIndex];
+
+           if (currentQuizType === 1) {
+               // Exercise 1: Identify Features
+               const correctFeature = `${qPhoneme.voicing}, ${qPhoneme.place}, ${qPhoneme.manner}`;
+               let options = qPhoneme.cachedOptions;
+               if (!options) {
+                   const list = phonemeData[currentQuizCategory];
+                   const wrongOptions = list.filter(i => i.symbol !== qPhoneme.symbol).map(i => `${i.voicing}, ${i.place}, ${i.manner}`);
+                   options = shuffleArray([correctFeature, ...shuffleArray(wrongOptions).slice(0, 3)]);
+                   qPhoneme.cachedOptions = options;
+               }
+
+               container.innerHTML = `
+                   <p style="font-weight: 600;">Select the correct articulatory characteristics for phoneme:</p>
+                   <div class="quiz-badge">/${qPhoneme.symbol}/</div>
+                   <div class="options-grid">
+                       ${options.map(opt => {
+                           let btnClass = 'option-btn';
+                           let isDisabled = previousAnswer ? 'disabled' : '';
+                           if (previousAnswer) {
+                               if (opt === correctFeature) btnClass += ' correct';
+                               else if (previousAnswer.selectedOpt === opt) btnClass += ' wrong';
+                           }
+                           return `<button class="${btnClass}" ${isDisabled} onclick="handleOptionType1(this, '${opt}', '${correctFeature}')">${opt}</button>`;
+                       }).join('')}
+                   </div>
+                   <div id="quiz-feedback" class="feedback-msg">
+                       ${previousAnswer ? (previousAnswer.isCorrect ? '<span style="color:var(--accent-green)">&#10004; Correct!</span>' : '<span style="color:var(--accent-highlight)">&#10008; Incorrect!</span>') : ''}
+                   </div>
+               `;
+           } else if (currentQuizType === 2) {
+               // Exercise 2: Word to Phoneme
+               let targetWordRaw = qPhoneme.cachedWord;
+
+               if (!targetWordRaw) {
+                   const rawArr = qPhoneme.examples.split(', ');
+                   targetWordRaw = rawArr[Math.floor(Math.random() * rawArr.length)];
+                   qPhoneme.cachedWord = targetWordRaw;
+               }
+
+               let options = qPhoneme.cachedOptions;
+               if (!options) {
+                   const list = phonemeData[currentQuizCategory];
+                   const wrongSymbols = list.filter(i => i.symbol !== qPhoneme.symbol).map(i => i.symbol);
+                   options = shuffleArray([qPhoneme.symbol, ...shuffleArray(wrongSymbols).slice(0, 3)]);
+                   qPhoneme.cachedOptions = options;
+               }
+
+               container.innerHTML = `
+                   <p style="font-weight: 600;">Which phoneme is present in this word?</p>
+                   <div class="target-word-display">${targetWordRaw}</div>
+                   <div class="options-grid">
+                       ${options.map(sym => {
+                           let btnClass = 'option-btn';
+                           let isDisabled = previousAnswer ? 'disabled' : '';
+                           if (previousAnswer) {
+                               if (sym === qPhoneme.symbol) btnClass += ' correct';
+                               else if (previousAnswer.selectedOpt === sym) btnClass += ' wrong';
+                           }
+                           return `<button class="${btnClass}" ${isDisabled} onclick="handleOptionType2(this, '${sym}', '${qPhoneme.symbol}')">/${sym}/</button>`;
+                       }).join('')}
+                   </div>
+                   <div id="quiz-feedback" class="feedback-msg">
+                       ${previousAnswer ? (previousAnswer.isCorrect ? '<span style="color:var(--accent-green)">&#10004; Correct!</span>' : '<span style="color:var(--accent-highlight)">&#10008; Incorrect!</span>') : ''}
+                   </div>
+               `;
+           }
+       }
+
+       function handleOptionType1(btn, selected, correct) {
+           const isCorrect = (selected === correct);
+           userAnswers[currentQuestionIndex] = {
+               selectedOpt: selected,
+               correctOpt: correct,
+               isCorrect: isCorrect,
+               item: quizSessionData[currentQuestionIndex]
+           };
+           renderQuestion();
+       }
+
+       function handleOptionType2(btn, selected, correct) {
+           const isCorrect = (selected === correct);
+           userAnswers[currentQuestionIndex] = {
+               selectedOpt: selected,
+               correctOpt: correct,
+               isCorrect: isCorrect,
+               item: quizSessionData[currentQuestionIndex]
+           };
+           renderQuestion();
+       }
+
+       function prevQuestion() {
+           if (currentQuestionIndex > 0) {
+               currentQuestionIndex--;
+               renderQuestion();
+           }
+       }
+
+       function nextQuestion() {
+           if (currentQuestionIndex < TOTAL_QUESTIONS - 1) {
+               currentQuestionIndex++;
+               renderQuestion();
+           } else {
+               showResults();
+           }
+       }
+
+       /* --- RESULTS SCREEN --- */
+       function showResults() {
+           document.getElementById('progress-wrapper').style.display = 'none';
+           document.getElementById('quiz-nav-bar').style.display = 'none';
+
+           let correctCount = 0;
+           let reviewItems = [];
+
+           userAnswers.forEach((ans, idx) => {
+               if (ans && ans.isCorrect) {
+                   correctCount++;
+               } else {
+                   const item = quizSessionData[idx];
+                   reviewItems.push(item);
+               }
+           });
+
+           const wrongCount = TOTAL_QUESTIONS - correctCount;
+           const scorePct = Math.round((correctCount / TOTAL_QUESTIONS) * 100);
+
+           const container = document.getElementById('quiz-body');
+           container.innerHTML = `
+               <div class="results-card">
+                   <h2>Quiz Completed!</h2>
+                   <div class="results-score">${scorePct}%</div>
+                   <p style="font-size: 1.1rem; font-weight: 600;">
+                       <span style="color: var(--accent-green);">&#10004; Correct: ${correctCount}</span> &nbsp;|&nbsp; 
+                       <span style="color: var(--accent-highlight);">&#10008; Incorrect: ${wrongCount}</span>
+                   </p>
+                   
+                   ${reviewItems.length > 0 ? `
+                       <div class="review-list">
+                           <h4>Recommended Phonemes to Review:</h4>
+                           <ul>
+                               ${reviewItems.map(item => `
+                                   <li><strong>/${item.symbol}/</strong> - ${item.name} (e.g., <em>${item.examples}</em>)</li>
+                               `).join('')}
+                           </ul>
+                       </div>
+                   ` : `
+                       <div class="review-list" style="border-color: var(--accent-green);">
+                           <h4 style="color: var(--accent-green);">Perfect Mastery!</h4>
+                           <p style="color: var(--text-muted);">You scored 100%. Great job identifying all phoneme features!</p>
+                       </div>
+                   `}
+
+                   <button class="header-btn" onclick="initQuizSession()" style="margin-top: 0.5rem;">Try Again</button>
+               </div>
+           `;
+       }
+
+       function shuffleArray(arr) {
+           return arr.sort(() => Math.random() - 0.5);
+       }
+
+       window.onload = () => {
+           document.getElementById('vocal-tract').innerHTML = svgCode;
+           renderPhonemeButtons();
+           selectPhoneme('i:');
+       };
+   </script>
+</body>
+</html>
